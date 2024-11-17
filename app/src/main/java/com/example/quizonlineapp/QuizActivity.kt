@@ -22,13 +22,14 @@ class QuizActivity : AppCompatActivity(), View.OnClickListener {
 
     private lateinit var binding: ActivityQuizBinding
     private var currentQuestionIndex = 0
-    var selectedAnswer = ""
-    var score = 0;
+    private var selectedAnswer = ""
+    private var score = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityQuizBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         binding.apply {
             btn0.setOnClickListener(this@QuizActivity)
             btn1.setOnClickListener(this@QuizActivity)
@@ -61,16 +62,18 @@ class QuizActivity : AppCompatActivity(), View.OnClickListener {
                 Toast.makeText(this@QuizActivity, "Time's up!", Toast.LENGTH_LONG).show()
                 finish() // Ends the quiz when the timer finishes
             }
-        }.start() // Start the timer
+        }.start()
     }
 
     private fun loadQuestions() {
-
-        if(currentQuestionIndex == questionModelList.size){
-            selectedAnswer = ""
+        if (currentQuestionIndex == questionModelList.size) {
             finishQuiz()
             return
         }
+
+        // Reset selected answer for the next question.
+        selectedAnswer = ""
+
         if (questionModelList.isEmpty()) {
             Toast.makeText(this, "No questions to display!", Toast.LENGTH_LONG).show()
             finish()
@@ -87,61 +90,66 @@ class QuizActivity : AppCompatActivity(), View.OnClickListener {
             btn1.text = currentQuestion.options[1]
             btn2.text = currentQuestion.options[2]
             btn3.text = currentQuestion.options[3]
-        }
-    }
 
-    private fun handleAnswerSelection(selectedAnswer: String) {
-        val correctAnswer = questionModelList[currentQuestionIndex].correct
-        if (selectedAnswer == correctAnswer) {
-            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "Wrong answer!", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onClick(view: View) {
-        // Reset all buttons to gray
-        binding.apply {
+            // Reset button colors
             btn0.setBackgroundColor(getColor(R.color.gray))
             btn1.setBackgroundColor(getColor(R.color.gray))
             btn2.setBackgroundColor(getColor(R.color.gray))
             btn3.setBackgroundColor(getColor(R.color.gray))
         }
+    }
 
+    override fun onClick(view: View?) {
         val clickedBtn = view as Button
+
         if (clickedBtn.id == R.id.next_btn) {
-            if(selectedAnswer == questionModelList[currentQuestionIndex].correct){
-                score++
-                Log.i("Score", score.toString())
+            // Check if an answer has been selected.
+            if (selectedAnswer.isEmpty()) {
+                Toast.makeText(this, "Please select an answer to continue", Toast.LENGTH_SHORT).show()
+                return
             }
+
+            // Validate the answer.
+            if (selectedAnswer == questionModelList[currentQuestionIndex].correct) {
+                score++
+                Log.i("Quiz Score", "Current Score: $score")
+            }
+
+            // Move to the next question.
             currentQuestionIndex++
             loadQuestions()
         } else {
-            // Highlight the selected option in orange
+            // An option button is clicked.
             selectedAnswer = clickedBtn.text.toString()
+
+            // Highlight the selected answer.
+            binding.apply {
+                btn0.setBackgroundColor(getColor(R.color.gray))
+                btn1.setBackgroundColor(getColor(R.color.gray))
+                btn2.setBackgroundColor(getColor(R.color.gray))
+                btn3.setBackgroundColor(getColor(R.color.gray))
+            }
             clickedBtn.setBackgroundColor(getColor(R.color.orange))
         }
     }
 
-    private fun finishQuiz(){
-        val totalQuestion = questionModelList.size
-        val percentage = ((score.toFloat()/totalQuestion.toFloat()) * 100).toInt()
+    private fun finishQuiz() {
+        val totalQuestions = questionModelList.size
+        val percentage = ((score.toFloat() / totalQuestions.toFloat()) * 100).toInt()
 
         val dialogBinding = ScoreDialogBinding.inflate(layoutInflater)
         dialogBinding.apply {
             scoreProgressIndicator.progress = percentage
-            scoreProgressText.text = "${percentage}%"
-            if(percentage>60){
-                scoreTitle.text = "congrats you have pass"
+            scoreProgressText.text = "$percentage %"
+            if (percentage > 60) {
+                scoreTitle.text = "Congrats! You have passed"
                 scoreTitle.setTextColor(Color.BLUE)
-
-            }else{
-                scoreTitle.text = "oops you have failed"
+            } else {
+                scoreTitle.text = "Oops! You have failed"
                 scoreTitle.setTextColor(Color.RED)
             }
-
-            scoreSubtitle.text = "$score out of $totalQuestion are correct"
-            finishBtn.setOnClickListener(){
+            scoreSubtitle.text = "$score out of $totalQuestions are correct"
+            finishBtn.setOnClickListener {
                 finish()
             }
         }
@@ -150,7 +158,5 @@ class QuizActivity : AppCompatActivity(), View.OnClickListener {
             .setView(dialogBinding.root)
             .setCancelable(false)
             .show()
-
-
     }
 }
